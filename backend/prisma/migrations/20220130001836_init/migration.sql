@@ -6,7 +6,7 @@ CREATE TABLE "User" (
     "id" SERIAL NOT NULL,
     "firstName" TEXT NOT NULL,
     "lastName" TEXT NOT NULL,
-    "favouriteColur" "Colour" NOT NULL,
+    "favouriteColour" "Colour" NOT NULL,
 
     CONSTRAINT "User_pkey" PRIMARY KEY ("id")
 );

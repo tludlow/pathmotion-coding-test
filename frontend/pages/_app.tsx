@@ -1,7 +1,10 @@
 import { AppProps } from "next/app";
 import Head from "next/head";
+import { QueryClient, QueryClientProvider } from "react-query";
+import { ReactQueryDevtools } from "react-query/devtools";
 import "../styles/globals.css";
 
+export const queryClient = new QueryClient();
 export default function App({ Component, pageProps }: AppProps) {
   return (
     <>
@@ -21,7 +24,10 @@ export default function App({ Component, pageProps }: AppProps) {
         <meta name="twitter:card" content="summary_large_image" />
       </Head>
 
-      <Component {...pageProps} />
+      <QueryClientProvider client={queryClient}>
+        <Component {...pageProps} />
+        <ReactQueryDevtools initialIsOpen={false} />
+      </QueryClientProvider>
     </>
   );
 }
