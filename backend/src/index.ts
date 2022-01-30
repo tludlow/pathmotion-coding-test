@@ -2,10 +2,10 @@ import { PrismaClient } from "@prisma/client";
 import express from "express";
 import bodyParser from "body-parser";
 import cors from "cors";
-import { generateRandomUser } from "./lib/userGenerator";
+import { generateRandomUsers } from "./lib/userGenerator";
 
 require("dotenv").config();
-const prisma = new PrismaClient();
+export const prisma = new PrismaClient();
 const app = express();
 
 app.use(cors());
@@ -23,7 +23,20 @@ app.get("/", (req, res) => {
 });
 
 app.get("/users", async (req, res) => {
-  const users = await prisma.user.findMany({ orderBy: { id: "asc" } });
+  const page = req.query.page as string;
+  let pageNum = 1;
+
+  if (page) pageNum = parseInt(page);
+  if (pageNum < 0)
+    return res
+      .status(400)
+      .send({ error: "page number must be greater than 0" });
+
+  const users = await prisma.user.findMany({
+    take: 20,
+    skip: 0 * pageNum,
+    orderBy: { id: "asc" },
+  });
 
   // Go through all the users and get their connections, then reform the resulting array with these included
   let formedUsers = [];
@@ -42,7 +55,7 @@ app.get("/users", async (req, res) => {
     formedUsers.push(newUser);
   }
 
-  res.status(200).send({ users: formedUsers });
+  res.status(200).send({ page, users: formedUsers });
 });
 
 // Load the user, favourite colour and all connections and return as json
@@ -101,11 +114,16 @@ app.post("/testdata", async (req, res) => {
       .status(400)
       .send({ error: "The user count must be between 1 and 1000000" });
 
-  generateRandomUser();
+  // Clear the current data
+  await prisma.user.deleteMany({});
+
+  // Create [userCount] number of random users
+  await generateRandomUsers(count);
+
   res.status(200).send({ count });
 });
 
-app.patch("/user/:id/colour", async (req, res) => {
+app.patch("/users/:id/colour", async (req, res) => {
   const { id } = req.params;
   const { colour } = req.body;
 
