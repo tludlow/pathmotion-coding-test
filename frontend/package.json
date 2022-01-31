@@ -4,13 +4,14 @@
   "description": "A user connection application",
   "main": "index.js",
   "scripts": {
-    "dev": "next dev"
+    "dev": "next dev",
+    "build": "next build"
   },
   "author": "tludlow",
   "license": "MIT",
   "dependencies": {
     "axios": "^0.25.0",
-    "next": "^12.0.7",
+    "next": "^12.0.9",
     "react": "^17.0.2",
     "react-dom": "^17.0.2",
     "react-query": "^3.34.1"

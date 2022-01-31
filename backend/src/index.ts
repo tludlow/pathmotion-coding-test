@@ -8,6 +8,7 @@ require("dotenv").config();
 export const prisma = new PrismaClient();
 const app = express();
 
+// Basic express middlewares, one for setting CORS up correctly and one for parsing the body of requests
 app.use(cors());
 app.use(bodyParser.json());
 app.use(
@@ -18,10 +19,12 @@ app.use(
 
 const port = process.env.PORT || 5000;
 
+// Hello world route to test the server is running
 app.get("/", (req, res) => {
-  res.status(200).send({ hi: "hello" });
+  res.status(200).send({ hello: "world" });
 });
 
+// GET route for all the users, is paged for efficiency, with a query string of page being provided to access further user data
 app.get("/users", async (req, res) => {
   const page = req.query.page as string;
   let pageNum = 1;
@@ -34,11 +37,12 @@ app.get("/users", async (req, res) => {
 
   const users = await prisma.user.findMany({
     take: 20,
-    skip: 0 * pageNum,
+    skip: 20 * pageNum,
     orderBy: { id: "asc" },
   });
 
-  // Go through all the users and get their connections, then reform the resulting array with these included
+  // Go through all the users and get their connections, then reform the resulting array with the new user objects that also include the connections they have.
+  // Not ideal, could all be done in one single SQL query if not using prisma.
   let formedUsers = [];
   for (const user of users) {
     const relationships = await prisma.$queryRaw`
@@ -51,14 +55,23 @@ app.get("/users", async (req, res) => {
               WHERE "A" = ${user.id}
       )
   `;
-    const newUser = { ...user, relations: relationships };
+    const newUser = {
+      ...user,
+      relations: relationships,
+    };
     formedUsers.push(newUser);
   }
 
-  res.status(200).send({ page, users: formedUsers });
+  // Send the user data and some extra data for the frontend to use with the infinite scrolling
+  res.status(200).send({
+    page: pageNum,
+    nextPage: pageNum + 1,
+    users: formedUsers,
+    hasNextPage: users.length === 0,
+  });
 });
 
-// Load the user, favourite colour and all connections and return as json
+// Get the user data for a given user by id
 app.get("/users/:userId", async (req, res) => {
   const { userId } = req.params;
 
@@ -99,6 +112,7 @@ app.get("/users/:userId", async (req, res) => {
   res.status(200).send(finalUser);
 });
 
+// Endpoint to clear the database and then seed it with some random data
 app.post("/testdata", async (req, res) => {
   const { userCount } = req.body;
 
@@ -114,7 +128,8 @@ app.post("/testdata", async (req, res) => {
       .status(400)
       .send({ error: "The user count must be between 1 and 1000000" });
 
-  // Clear the current data
+  // Clear the current data for the project
+  await prisma.$queryRaw`DELETE FROM _follows`;
   await prisma.user.deleteMany({});
 
   // Create [userCount] number of random users
@@ -123,6 +138,7 @@ app.post("/testdata", async (req, res) => {
   res.status(200).send({ count });
 });
 
+// Endpoint to update the favourite colour of a given user by id.
 app.patch("/users/:id/colour", async (req, res) => {
   const { id } = req.params;
   const { colour } = req.body;

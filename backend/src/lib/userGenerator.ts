@@ -1,9 +1,10 @@
 import { prisma } from "./../index";
 import axios from "axios";
-import { Colour } from "@prisma/client";
 
-const colours = [Colour.RED, Colour.BLUE, Colour.GREEN];
+// Supported colours in the application
+const colours = ["RED", "GREEN", "BLUE"];
 
+// Generate [total] random users and between 0 and 50 random connections for each random user generated. Should the total be less than 50 users, the total is the maximum number of connections for any given user.
 export const generateRandomUsers = async (total: number) => {
   // Get the random names from randomuser.me, a nice way of getting real person names. Could easily just have arrays of random first and lastnames and select from those to create names
   const randomUsers = await axios.get(
@@ -24,16 +25,19 @@ export const generateRandomUsers = async (total: number) => {
   await prisma.user.createMany({ data });
 
   // Generate the connections for each user, between 0 and 50 random connections.
+  // (Probably a more elegant way of creating and then getting the users against to create connections but this works well given that prisma many-to-many relations are quite new and dont always work as expected)
   const users = await prisma.user.findMany();
 
-  const highestId = users[users.length - 1].id;
-  const lowestId = highestId - 49;
+  // Find the min and max current id for the new users so we can randomly generate connections between people in this range
+  const idRangeQuery =
+    await prisma.$queryRaw`SELECT min(id), max(id) FROM "User"`;
+  const highestId = idRangeQuery[0].max;
+  const lowestId = idRangeQuery[0].min;
   for (const user of users) {
     // Can only have a maximum of [userCount] connections when generating less than 50 users
-    const connectionCount = Math.floor(Math.random() * Math.max(50, total));
-    console.log(
-      "generating " + connectionCount + " connections for " + user.id
-    );
+    // Take the minimum of these and only find this many connections maximum
+    const maxConnections = Math.min(50, total);
+    const connectionCount = Math.floor(Math.random() * maxConnections);
 
     // Generate connectionCount random integers between highestId and lowestId not including the users own id
     let connections = [];

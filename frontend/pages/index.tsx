@@ -1,63 +1,77 @@
-import axios from "axios";
-import Link from "next/link";
-import { useState } from "react";
-import { useQuery } from "react-query";
-
-// Get the class name which is the same as the colour provided. Fine implementation for a small number of colours such as here but not that scalable.
-const getClassForColour = (colour: string) => {
-  if (colour === "RED") return "text-red-500";
-  if (colour === "GREEN") return "text-green-500";
-  return "text-blue-500";
-};
+import UserTableRows from "@components/ui/UserTableRows";
+import useIntersectionObserver from "hooks/useIntersectionObserver";
+import useUsers from "hooks/useUsers";
+import { useEffect, useRef, Fragment } from "react";
 
 export default function Index() {
-  // The current page of users we have loaded
-  const [page, setPage] = useState(0);
+  // Load the user data using an infinite query for pagination
+  const {
+    isLoading,
+    data,
+    isError,
+    error,
+    fetchNextPage,
+    isFetchingNextPage,
+    hasNextPage,
+  } = useUsers();
 
-  // Load the users
-  const { isLoading, isError, data, error } = useQuery(
-    ["users", page],
-    async () => {
-      const response = await axios.get(
-        `http://localhost:5000/users?page=${page}`
-      );
-      return response.data;
-    }
-  );
+  const loadMoreRef = useRef<HTMLDivElement>(null);
+  const entry = useIntersectionObserver(loadMoreRef, {});
+  const isVisible = !!entry?.isIntersecting;
+
+  // Loads more data in the infinite scroll when the div at the bottom of the scroll container becomes visibile
+  useEffect(() => {
+    if (isVisible) fetchNextPage();
+  }, [entry]);
 
   if (isLoading) return <p>Loading...</p>;
-  if (isError) return <p>{error.message}</p>;
-
+  if (isError) return <p>{error?.message}</p>;
   return (
-    <>
+    <div>
       <h1 className="text-2xl font-bold">Rainbow Connection</h1>
-
       <h3 className="mt-12 font-bold">Users</h3>
-      <ul className="space-y-10">
-        {data.users.length === 0 ? (
-          <p>There are no users...</p>
-        ) : (
-          data.users.map((user) => (
-            <li key={user.id} className="space-x-10">
-              <Link href={`/${user.id}`}>
-                <a>
-                  {user.id} - {user.firstName} {user.lastName}
-                </a>
-              </Link>
-              <span className={`${getClassForColour(user.favouriteColour)}`}>
-                {user.favouriteColour}
-              </span>
-              {user.relations.map((connection) => (
-                <Link href={`/${connection.id}`}>
-                  <a>
-                    {connection.firstName} {connection.lastName}
-                  </a>
-                </Link>
-              ))}
-            </li>
-          ))
-        )}
-      </ul>
-    </>
+
+      {data?.pages.length === 0 ? (
+        <p>There are no users...</p>
+      ) : (
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-gray-200">
+            <tr>
+              <th
+                scope="col"
+                className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
+              >
+                Name
+              </th>
+              <th
+                scope="col"
+                className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
+              >
+                Favourite Colour
+              </th>
+              <th
+                scope="col"
+                className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
+              >
+                Connections
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {data?.pages.map((page, idx) => (
+              <UserTableRows key={idx} users={page.users} />
+            ))}
+          </tbody>
+        </table>
+      )}
+
+      {hasNextPage ? (
+        <div ref={loadMoreRef}>
+          {isFetchingNextPage ? "Loading more..." : ""}
+        </div>
+      ) : (
+        <p className="font-medium text-red-700">No more data to load</p>
+      )}
+    </div>
   );
 }
