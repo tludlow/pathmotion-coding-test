@@ -21,7 +21,7 @@
 
 ### Docker
 
-Whilst I have attempted to setup a docker environment for the project to make running it easier (and for bonus points in the challenge) there seems to be weird issues surrounding prisma and docker environments. The docker environments work when you ignore this issue, and can be ran successfully if you execute the above database commands within the containers when prompted.
+Whilst I have attempted to setup a docker environment for the project to make running it easier (and for bonus points in the challenge) there seems to be weird issues surrounding prisma and docker environments. The docker environments work when you ignore this issue, and can be ran successfully if you execute the above database commands within the containers when prompted. Despite this, the Dockerfiles are implemented using multi-stage builds to ensure that caching can be utilised between builds to save on build time. Further to this, alpine images are utilised to reduce image sizes.
 
 ## Architecture
 
