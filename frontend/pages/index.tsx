@@ -1,7 +1,7 @@
 import UserTableRows from "@components/ui/UserTableRows";
 import useIntersectionObserver from "hooks/useIntersectionObserver";
 import useUsers from "hooks/useUsers";
-import { useEffect, useRef, Fragment } from "react";
+import { useEffect, useRef } from "react";
 
 export default function Index() {
   // Load the user data using an infinite query for pagination
