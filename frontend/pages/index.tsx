@@ -21,17 +21,22 @@ export default function Index() {
 
   // Loads more data in the infinite scroll when the div at the bottom of the scroll container becomes visibile
   useEffect(() => {
-    if (isVisible) fetchNextPage();
+    if (isVisible && data) {
+      console.log("loading more");
+      fetchNextPage();
+    }
   }, [entry]);
 
-  if (isLoading) return <p>Loading...</p>;
-  if (isError) return <p>{error?.message}</p>;
   return (
     <div>
       <h1 className="text-2xl font-bold">Rainbow Connection</h1>
       <h3 className="mt-12 font-bold">Users</h3>
 
-      {data?.pages.length === 0 ? (
+      {isLoading ? (
+        <p>Loading users...</p>
+      ) : isError ? (
+        <p className="text-red-500">{error?.message}</p>
+      ) : data?.pages.length === 0 ? (
         <p>There are no users...</p>
       ) : (
         <table className="min-w-full divide-y divide-gray-200">
@@ -65,13 +70,8 @@ export default function Index() {
         </table>
       )}
 
-      {hasNextPage ? (
-        <div ref={loadMoreRef}>
-          {isFetchingNextPage ? "Loading more..." : ""}
-        </div>
-      ) : (
-        <p className="font-medium text-red-700">No more data to load</p>
-      )}
+      <div ref={loadMoreRef}>{isFetchingNextPage ? "Loading more..." : ""}</div>
+      {!hasNextPage && <p>No more users to show.</p>}
     </div>
   );
 }
